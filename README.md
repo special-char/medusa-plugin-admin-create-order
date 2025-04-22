@@ -1,65 +1,171 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
-<h1 align="center">
-  Medusa Plugin Starter
-</h1>
+# Admin Create Order Plugin
 
-<h4 align="center">
-  <a href="https://docs.medusajs.com">Documentation</a> |
-  <a href="https://www.medusajs.com">Website</a>
-</h4>
+A plugin that provides administrative capabilities to create orders through a dedicated endpoint. This plugin extends the core functionality by adding admin-specific order creation features.
 
-<p align="center">
-  Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
+## Plugin Structure
 
-## Compatibility
+```
+src/
+├── admin/         # Admin-specific implementations
+├── api/           # API endpoint handlers
+│   └── admin/     
+│       └── create-order/  # Order creation endpoint logic
+├── modules/       # Plugin modules and business logic
+├── providers/     # Plugin service providers
+├── subscribers/   # Event subscribers
+├── workflows/     # Order creation workflows
+└── jobs/         # Background processing jobs
+```
 
-This starter is compatible with versions >= 2.4.0 of `@medusajs/medusa`. 
+## Features
 
-## Getting Started
+- Secure admin-only endpoint for order creation
+- Validation of order data
+- Integration with existing order management system
+- Event-driven architecture for order processing
+- Background job support for async operations
 
-Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to set up a server.
+## Installation
 
-Visit the [Plugins documentation](https://docs.medusajs.com/learn/fundamentals/plugins) to learn more about plugins and how to create them.
+1. Install the plugin in your project:
 
-Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
+```bash
+npm install @tsc_tech/medusa-admin-create-orde
+# or
+yarn add @tsc_tech/medusa-admin-create-orde
+```
 
-## What is Medusa
+2. Register the plugin in your application:
 
-Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
+```typescript
+import { AdminCreateOrderPlugin } from '@tsc_tech/medusa-admin-create-orde'
 
-Learn more about [Medusa’s architecture](https://docs.medusajs.com/learn/introduction/architecture) and [commerce modules](https://docs.medusajs.com/learn/fundamentals/modules/commerce-modules) in the Docs.
+// Register plugin
+const plugin = new AdminCreateOrderPlugin()
+await app.registerPlugin(plugin)
+```
 
-## Community & Contributions
+## Configuration
 
-The community and core team are available in [GitHub Discussions](https://github.com/medusajs/medusa/discussions), where you can ask for support, discuss roadmap, and share ideas.
+Add the following to your configuration file:
 
-Join our [Discord server](https://discord.com/invite/medusajs) to meet other community members.
+```typescript
+{
+  "plugins": {
+     {
+      resolve: "@tsc_tech/medusa-admin-create-orde",
+      options: {},
+    },
+  }
+}
+```
 
-## Other channels
+## API Reference
 
-- [GitHub Issues](https://github.com/medusajs/medusa/issues)
-- [Twitter](https://twitter.com/medusajs)
-- [LinkedIn](https://www.linkedin.com/company/medusajs)
-- [Medusa Blog](https://medusajs.com/blog/)
-# medusa-plugin-admin-create-order
+### Create Order Endpoint
+
+**Route:** `POST /admin/orders`
+
+**Required Headers:**
+- `Authorization`: Bearer token with admin privileges
+
+**Request Body:**
+```json
+{
+  "order": {
+    "customerId": "string",
+    "items": [
+      {
+        "productId": "string",
+        "quantity": number,
+        "price": number
+      }
+    ],
+    "shippingAddress": {
+      "street": "string",
+      "city": "string",
+      "state": "string",
+      "zipCode": "string",
+      "country": "string"
+    },
+    "notes": "string" // Optional
+  }
+}
+```
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "orderId": "string",
+    "status": "string",
+    "createdAt": "ISO-8601 timestamp",
+    "total": number
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "error": {
+    "code": "string",
+    "message": "string"
+  }
+}
+```
+
+## Extending the Plugin
+
+You can extend the plugin's functionality by:
+
+1. Creating custom subscribers:
+```typescript
+import { OrderSubscriber } from '@your-org/admin-create-order'
+
+class CustomOrderSubscriber extends OrderSubscriber {
+  async afterOrderCreated(order) {
+    // Custom logic
+  }
+}
+```
+
+2. Adding custom validators:
+```typescript
+import { OrderValidator } from '@your-org/admin-create-order'
+
+class CustomOrderValidator extends OrderValidator {
+  async validate(order) {
+    // Custom validation logic
+  }
+}
+```
+
+## Development
+
+For plugin development:
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Build plugin
+npm run build
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+[Your License Type] © [Year] [Your Organization]
