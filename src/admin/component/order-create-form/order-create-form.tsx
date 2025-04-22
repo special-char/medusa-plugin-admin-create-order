@@ -426,7 +426,7 @@ const OrderCreateForm = () => {
             return
         }
         if (tab === OrderCreateTab.CUSTOMER_ADDRESS) {
-            const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name", "shipping_address_name", "shipping_address_1", "shipping_city", "shipping_country_code", "shipping_postal_code", "shipping_state", "shipping_phone_number", "shipping_company", "billing_same_as_shipping", "billing_address_name", "billing_address_1", "billing_city", "billing_country_code", "billing_postal_code", "billing_state", "billing_phone_number", "billing_company"])
+            const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name",])
 
             if (!valid) {
                 const errors = form.formState.errors;
@@ -474,6 +474,21 @@ const OrderCreateForm = () => {
                 break
             }
             case OrderCreateTab.CUSTOMER_ADDRESS: {
+                // If billing same as shipping, copy shipping values to billing
+                if (form.getValues("billing_same_as_shipping")) {
+                    const shippingData = form.getValues();
+                    form.setValue("billing_first_name", shippingData.shipping_first_name);
+                    form.setValue("billing_last_name", shippingData.shipping_last_name);
+                    form.setValue("billing_address_1", shippingData.shipping_address_1);
+                    form.setValue("billing_address_2", shippingData.shipping_address_2);
+                    form.setValue("billing_company", shippingData.shipping_company);
+                    form.setValue("billing_country_code", shippingData.shipping_country_code);
+                    form.setValue("billing_city", shippingData.shipping_city);
+                    form.setValue("billing_postal_code", shippingData.shipping_postal_code);
+                    form.setValue("billing_state", shippingData.shipping_state);
+                    form.setValue("billing_phone_number", shippingData.shipping_phone_number);
+                    form.setValue("billing_address_name", shippingData.shipping_address_name);
+                }
                 const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name", "shipping_address_name", "shipping_address_1", "shipping_city", "shipping_country_code", "shipping_postal_code", "shipping_state", "shipping_phone_number", "shipping_company", "billing_same_as_shipping", "billing_address_name", "billing_address_1", "billing_city", "billing_country_code", "billing_postal_code", "billing_state", "billing_phone_number", "billing_company"])
 
                 if (valid) {
