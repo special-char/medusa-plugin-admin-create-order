@@ -117,32 +117,6 @@ Add the following to your configuration file:
 }
 ```
 
-## Extending the Plugin
-
-You can extend the plugin's functionality by:
-
-1. Creating custom subscribers:
-```typescript
-import { OrderSubscriber } from '@your-org/admin-create-order'
-
-class CustomOrderSubscriber extends OrderSubscriber {
-  async afterOrderCreated(order) {
-    // Custom logic
-  }
-}
-```
-
-2. Adding custom validators:
-```typescript
-import { OrderValidator } from '@your-org/admin-create-order'
-
-class CustomOrderValidator extends OrderValidator {
-  async validate(order) {
-    // Custom validation logic
-  }
-}
-```
-
 ## Development
 
 For plugin development:
