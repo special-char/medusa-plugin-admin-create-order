@@ -65,11 +65,11 @@ const createColumns = (props: Props) => [
                                 checked={checkboxState}
                                 onCheckedChange={(value) => {
                                     if (value) {
-                                        // If checking, add all visible variants
+                                        // Add all visible variants that are not already selected
                                         const newVariants = [...currentVariants];
                                         visibleVariantIds.forEach(id => {
                                             if (!newVariants.some((v: any) => v.id === id)) {
-                                                const variant = table.getRowModel().rows.find(row => row.original.id === id)?.original;
+                                                const variant = currentPageRows.find(row => row.original.id === id)?.original;
                                                 if (variant) {
                                                     newVariants.push({
                                                         id,
@@ -81,7 +81,7 @@ const createColumns = (props: Props) => [
                                         });
                                         field.onChange(newVariants);
                                     } else {
-                                        // If unchecking, remove all visible variants
+                                        // Remove all visible variants from selection
                                         const remainingVariants = currentVariants.filter(
                                             (v: any) => !visibleVariantIds.includes(v.id)
                                         );
@@ -108,22 +108,23 @@ const createColumns = (props: Props) => [
                             onCheckedChange={useCallback((checked: CheckboxCheckedState) => {
                                 const currentVariants = props.form.getValues("variants") || [];
                                 if (checked) {
-                                    // Update form state first
-                                    field.onChange([
-                                        ...currentVariants,
-                                        {
-                                            id: row.original.id,
-                                            quantity: 1,
-                                            variant: row.original
-                                        }
-                                    ]);
+                                    // Only add if not already present
+                                    if (!currentVariants.some((v: any) => v.id === row.original.id)) {
+                                        field.onChange([
+                                            ...currentVariants,
+                                            {
+                                                id: row.original.id,
+                                                quantity: 1,
+                                                variant: row.original
+                                            }
+                                        ]);
+                                    }
                                 } else {
-                                    // Update form state first
                                     field.onChange(
                                         currentVariants.filter((v: any) => v.id !== row.original.id)
                                     );
                                 }
-                            }, [])}
+                            }, [row.original.id, props.form])}
                         />
                     )}
                 />

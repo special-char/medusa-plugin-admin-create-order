@@ -125,6 +125,7 @@ type OrderCreateFormProps = {
     billing_postal_code: string
     billing_state: string
     billing_phone_number: string
+    shipping_option_id: string
 }
 
 const OrderCreateForm = () => {
@@ -207,6 +208,8 @@ const OrderCreateForm = () => {
             })),
     })
 
+    const [cartId, setCartId] = useState<string | null>(null);
+
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
         null
     )
@@ -218,6 +221,7 @@ const OrderCreateForm = () => {
         [OrderCreateTab.PRODUCTS]: "not-started",
         [OrderCreateTab.CUSTOMER]: "not-started",
         [OrderCreateTab.CUSTOMER_ADDRESS]: "not-started",
+        [OrderCreateTab.SHIPPING_OPTION]: "not-started",
     })
     // const { t } = useTranslation()
     const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null)
@@ -275,7 +279,7 @@ const OrderCreateForm = () => {
                 return [];
             }
             return data.addresses.map((address: any) => ({
-                label: `${address.address_1}${address.address_2 ? `, ${address.address_2}` : ''} (${address.city || ''}, ${address.province || ''})`,
+                label: `${address.first_name} ${address.last_name}, ${address.address_1} (${address.city || ''}, ${address.province || ''})`,
                 value: address.id,
                 country_code: address.country_code,
                 province: address.province,
@@ -352,6 +356,7 @@ const OrderCreateForm = () => {
 
         setVariantSelection(value)
     }
+
     const { table: productTable } = useDataTable({
         data: variantsData,
         columns: variantColumns,
@@ -378,7 +383,7 @@ const OrderCreateForm = () => {
                 [OrderCreateTab.REGION]: "in-progress",
                 [OrderCreateTab.PRODUCTS]: "not-started",
                 [OrderCreateTab.CUSTOMER]: "not-started",
-
+                [OrderCreateTab.SHIPPING_OPTION]: "not-started",
                 [OrderCreateTab.CUSTOMER_ADDRESS]: "not-started",
             }))
             return
@@ -401,6 +406,7 @@ const OrderCreateForm = () => {
                 [OrderCreateTab.CUSTOMER]: "not-started",
 
                 [OrderCreateTab.CUSTOMER_ADDRESS]: "not-started",
+                [OrderCreateTab.SHIPPING_OPTION]: "not-started",
             }))
             return
         }
@@ -422,6 +428,7 @@ const OrderCreateForm = () => {
                 [OrderCreateTab.CUSTOMER]: "in-progress",
 
                 [OrderCreateTab.CUSTOMER_ADDRESS]: "not-started",
+                [OrderCreateTab.SHIPPING_OPTION]: "not-started",
             }))
             return
         }
@@ -441,6 +448,25 @@ const OrderCreateForm = () => {
                 [OrderCreateTab.PRODUCTS]: "completed",
                 [OrderCreateTab.CUSTOMER]: "completed",
                 [OrderCreateTab.CUSTOMER_ADDRESS]: "in-progress",
+                [OrderCreateTab.SHIPPING_OPTION]: "not-started",
+            }))
+            return
+        }
+        if (tab === OrderCreateTab.SHIPPING_OPTION) {
+            const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name", "shipping_address_name", "shipping_address_1", "shipping_city", "shipping_country_code", "shipping_postal_code", "shipping_state", "shipping_phone_number", "shipping_company", "billing_same_as_shipping", "billing_address_name", "billing_address_1", "billing_city", "billing_country_code", "billing_postal_code", "billing_state", "billing_phone_number", "billing_company"])
+            if (!valid) {
+                const errors = form.formState.errors;
+                console.log("🚀 ~ handleTabChange ~ errors:", errors)
+                return
+            }
+            setTab(tab)
+            setTabState((prev) => ({
+                ...prev,
+                [OrderCreateTab.REGION]: "completed",
+                [OrderCreateTab.PRODUCTS]: "completed",
+                [OrderCreateTab.CUSTOMER]: "completed",
+                [OrderCreateTab.CUSTOMER_ADDRESS]: "completed",
+                [OrderCreateTab.SHIPPING_OPTION]: "in-progress",
             }))
             return
         }
@@ -490,10 +516,22 @@ const OrderCreateForm = () => {
                     form.setValue("billing_address_name", shippingData.shipping_address_name);
                 }
                 const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name", "shipping_address_name", "shipping_address_1", "shipping_city", "shipping_country_code", "shipping_postal_code", "shipping_state", "shipping_phone_number", "shipping_company", "billing_same_as_shipping", "billing_address_name", "billing_address_1", "billing_city", "billing_country_code", "billing_postal_code", "billing_state", "billing_phone_number", "billing_company"])
-
-                if (valid) {
-                    await onSubmit(form.getValues())
+                if (!valid) {
+                    return
                 }
+
+                await onSubmit(form.getValues())
+                handleTabChange(OrderCreateTab.SHIPPING_OPTION)
+
+
+                break
+            }
+            case OrderCreateTab.SHIPPING_OPTION: {
+                const valid = await form.trigger(["region_id", "variants", "email", "first_name", "last_name", "shipping_address_name", "shipping_address_1", "shipping_city", "shipping_country_code", "shipping_postal_code", "shipping_state", "shipping_phone_number", "shipping_company", "billing_same_as_shipping", "billing_address_name", "billing_address_1", "billing_city", "billing_country_code", "billing_postal_code", "billing_state", "billing_phone_number", "billing_company"])
+                if (!valid) {
+                    return
+                }
+                await onSubmitCart(form.getValues())
                 break
             }
         }
@@ -561,6 +599,35 @@ const OrderCreateForm = () => {
                 user,
                 shipping_address,
                 billing_address,
+                billing_same_as_shipping: data?.billing_same_as_shipping,
+            }
+
+            const order = await sdk.client.fetch<any>(
+                "/admin/create-cart-order",
+                {
+                    method: "POST",
+                    body: orderData,
+                }
+            )
+            if (order) {
+                // toast.success("Order placed successfully")
+                // navigation(`/orders/${order.id}`)
+                setCartId(order.cartId)
+                return
+            }
+
+        } catch (error: any) {
+            // console.error("Error Creating Order", error.message)
+            toast.error(error.message || `Failed to create order. Please try again.`)
+        }
+    }
+
+    const onSubmitCart = async (data: OrderCreateFormProps) => {
+        try {
+
+            const orderData = {
+                cart_id: cartId,
+                shipping_option_id: data?.shipping_option_id,
             }
 
             const order = await sdk.client.fetch<any>(
@@ -573,13 +640,32 @@ const OrderCreateForm = () => {
             if (order) {
                 toast.success("Order placed successfully")
                 navigation(`/orders/${order.id}`)
+
             }
+
         } catch (error: any) {
-            console.error("Error Creating Order", error.message)
-            toast.error("Failed to create order", error.message)
+            // console.error("Error Creating Order", error.message)
+            toast.error(error.message || `Failed to create order. Please try again.`)
         }
     }
-    sdk.admin.draftOrder.create
+    const shippingOptions = useComboboxData({
+        queryKey: ["shipping-options", "create-order", cartId],
+        queryFn: (params) =>
+            sdk.client.fetch<HttpTypes.StoreShippingOptionListResponse>(
+                `/admin/shipping-option`,
+                {
+                    method: "GET",
+                    query: { cart_id: cartId },
+                }
+            ),
+        getOptions: (data) =>
+            data.shipping_options.map((shippingOption) => ({
+                label: `${shippingOption.name} - price: ${shippingOption.calculated_price.calculated_amount}`,
+                value: shippingOption.id,
+            })),
+    })
+
+
     return (
         <RouteFocusModal>
 
@@ -594,9 +680,9 @@ const OrderCreateForm = () => {
                     className="flex h-full flex-col overflow-auto"
                 >
                     <RouteFocusModal.Header>
-                        <div className="flex w-full items-center justify-between gap-x-4">
-                            <div className="-my-2 w-full max-w-[600px] border-l">
-                                <ProgressTabs.List className="grid w-full grid-cols-4 text-sm">
+                        <div className="flex w-full items-center justify-between gap-x-5">
+                            <div className="-my-2 w-full max-w-[1000px] border-l">
+                                <ProgressTabs.List className="grid w-full grid-cols-5 text-sm">
                                     <ProgressTabs.Trigger
                                         className="w-full truncate px-1"
                                         value={OrderCreateTab.REGION}
@@ -629,6 +715,14 @@ const OrderCreateForm = () => {
                                         onClick={() => handleTabChange(OrderCreateTab.CUSTOMER_ADDRESS)}
                                     >
                                         Customer Address
+                                    </ProgressTabs.Trigger>
+                                    <ProgressTabs.Trigger
+                                        className="w-full truncate px-1"
+                                        value={OrderCreateTab.SHIPPING_OPTION}
+                                        status={tabState[OrderCreateTab.SHIPPING_OPTION]}
+                                        onClick={() => handleTabChange(OrderCreateTab.SHIPPING_OPTION)}
+                                    >
+                                        Shipping Option
                                     </ProgressTabs.Trigger>
                                 </ProgressTabs.List>
                             </div>
@@ -1478,6 +1572,41 @@ const OrderCreateForm = () => {
                                 )}
                             </div>
                         </ProgressTabs.Content>
+                        <ProgressTabs.Content value={OrderCreateTab.SHIPPING_OPTION}
+                            className="flex flex-col items-center">
+                            <div className="flex size-full max-w-3xl flex-col p-8">
+                                <Form.Field
+                                    control={form.control}
+                                    name="shipping_option_id"
+                                    render={({ field, fieldState }) => {
+                                        return (
+                                            <Form.Item className="w-full">
+                                                <Form.Label>Shipping Option</Form.Label>
+                                                <Form.Control>
+                                                    <div className="relative" style={{ zIndex: 100 }}>
+                                                        <Combobox
+                                                            {...field}
+                                                            options={shippingOptions.options}
+                                                            onSearchValueChange={shippingOptions.onSearchValueChange}
+                                                            searchValue={shippingOptions.searchValue}
+                                                            fetchNextPage={shippingOptions.fetchNextPage} onChange={(value) => {
+                                                                field.onChange(value)
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </Form.Control>
+                                                {fieldState.error && (
+                                                    <div className="text-red-500 text-sm mt-1">
+                                                        {fieldState.error.message}
+                                                    </div>
+                                                )}
+                                            </Form.Item>
+                                        )
+                                    }}
+                                />
+                            </div>
+
+                        </ProgressTabs.Content>
                     </RouteFocusModal.Body>
                 </ProgressTabs>
                 <RouteFocusModal.Footer>
@@ -1494,7 +1623,7 @@ const OrderCreateForm = () => {
                             onClick={handleContinue}
                             size="small"
                         >
-                            {tab === OrderCreateTab.CUSTOMER_ADDRESS ? (
+                            {tab === OrderCreateTab.SHIPPING_OPTION ? (
                                 form.formState.isSubmitting ? (
                                     <Spinner className="animate-spin" />
                                 ) : (
@@ -1557,14 +1686,6 @@ const useVariantColumns = (
                     //  <ProductHeader />
                     <div>Product</div>,
                 cell: ({ row }) => (
-                    // <ProductCell
-                    //   product={
-                    //     row.original.product as Pick<
-                    //       HttpTypes.AdminProduct,
-                    //       "title" | "thumbnail"
-                    //     >
-                    //   }
-                    // />
                     <div>Product</div>
                 ),
             }),
@@ -1633,10 +1754,5 @@ const useVariantColumns = (
     )
 }
 
-// const OrderCreateForm = () => {
-//     return (
-//         <div>Order Create</div>
-//     )
-// }
 export { OrderCreateForm }
 

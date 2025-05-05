@@ -240,7 +240,7 @@ export const completeCartWithDraftOrderWorkflow = createWorkflow(
                     region_id: cart.region?.id,
                     customer_id: cart.customer?.id,
                     sales_channel_id: cart.sales_channel_id,
-                    status: OrderStatus.DRAFT,
+                    // status: OrderStatus.DRAFT,
                     email: cart.email,
                     currency_code: cart.currency_code,
                     shipping_address: cart.shipping_address,
@@ -249,7 +249,7 @@ export const completeCartWithDraftOrderWorkflow = createWorkflow(
                     shipping_methods: shippingMethods,
                     metadata: cart.metadata,
                     promo_codes: promoCodes,
-                    is_draft_order: true,
+                    // is_draft_order: true,
                     credit_lines: creditLines,
                     no_notification: false
                 }
