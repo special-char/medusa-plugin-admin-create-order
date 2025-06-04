@@ -747,10 +747,12 @@ const OrderCreateForm = () => {
   const shippingOptions = useComboboxData({
     queryKey: ["shipping-options", "create-order", cartId],
     queryFn: (params) =>
-      sdk.admin.shippingOption.list({ fields: "calculated_price,name,id" }),
+      sdk.admin.shippingOption.list({
+        fields: "calculated_price,name,id,*service_zone",
+      }),
     getOptions: (data) =>
       data.shipping_options.map((shippingOption) => ({
-        label: `${shippingOption.name}`,
+        label: `${shippingOption.name} - ${shippingOption.service_zone.name}`,
         value: shippingOption.id,
       })),
   });
